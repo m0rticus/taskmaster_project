@@ -45,6 +45,24 @@ class MyAppState extends State<MyApp> {
               ),
               onPressed: () => print('Answer 1 chosen'),
             ),
+            ListView(
+              shrinkWrap: true,
+              physics: ClampingScrollPhysics(),
+              children: <Widget>[
+                ListTile(
+                  leading: Icon(Icons.photo_album),
+                  title: Text('Task 1'),
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_album),
+                  title: Text('Task 2'),
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_album),
+                  title: Text('Task 2'),
+                ),
+              ],
+            ),
             ElevatedButton(
               style: headerStyle,
               child: Align(
