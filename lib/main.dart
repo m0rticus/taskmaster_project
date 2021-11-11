@@ -1,7 +1,10 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -16,12 +19,27 @@ class MyApp extends StatefulWidget {
 // Stateful class to build app
 // Primarily for routing
 class MyAppState extends State<MyApp> {
+  final Future<FirebaseApp> _initialization = Firebase.initializeApp();
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: TaskOverview(),
-      routes: {
-        'categoryDetails': (context) => TaskDetails()
+    return FutureBuilder(
+      future: _initialization,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return MaterialApp(
+              home: TaskOverview(),
+              routes: {
+                'categoryDetails': (context) => TaskDetails()
+              }
+          );
+        }
+        return MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(
+              title: Text("Loading")
+            )
+          )
+        );
       }
     );
   }
@@ -38,12 +56,14 @@ class TaskOverview extends StatefulWidget {
 // Stateful class to build homepage overview
 class TaskOverviewState extends State<TaskOverview> {
   final List<String> buttonEntries = ['Daily', 'Weekly', 'Monthly', 'General'];
-  final List<String> textEntries = ['Task 1', 'Task 2', 'Task 3', 'Task 4', 'Task 5'];
+  final List<String> textEntries = [];
   final ButtonStyle headerStyle = ElevatedButton.styleFrom(minimumSize: Size(0, 50));
-  var index = 0;
+  final firestoreInstance = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {
+    initializeTestData();
+    retrieveTestData();
     return Scaffold(
         appBar: AppBar(
           title: Text('TaskMaster')
@@ -57,7 +77,7 @@ class TaskOverviewState extends State<TaskOverview> {
   // Builds a given category (primarily just the header)
   Widget _buildCategory(int i) {
     return AppBar(
-      title: Text(buttonEntries[i] + ' $index'),
+      title: Text(buttonEntries[i]),
       actions: <Widget>[
         IconButton(
             icon: Icon(Icons.access_alarm),
@@ -69,6 +89,7 @@ class TaskOverviewState extends State<TaskOverview> {
   }
 
   // Builds the tasks in a given category using ReorderableListView.
+  // TODO fix the alignment of the iconbutton
   Widget _buildTasks() {
     return ReorderableListView(
         shrinkWrap: true,
@@ -105,6 +126,25 @@ class TaskOverviewState extends State<TaskOverview> {
       list.add(_buildTasks());
     }
     return list;
+  }
+
+  void initializeTestData() {
+    for (int i = 1; i <= 5; i++) {
+      firestoreInstance.collection("tasks").add({
+        "name" : "test" + "$i",
+        "details" : {
+          "foo" : "bar"
+        }
+      });
+    }
+  }
+
+  void retrieveTestData() {
+    firestoreInstance.collection("tasks").get().then((querySnapshot) {
+      querySnapshot.docs.forEach((result) {
+        textEntries.add(result.data()["name"]);
+      });
+    });
   }
 }
 
