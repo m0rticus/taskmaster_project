@@ -62,7 +62,7 @@ class TaskOverviewState extends State<TaskOverview> {
 
   @override
   Widget build(BuildContext context) {
-    initializeTestData();
+    // initializeTestData();
     retrieveTestData();
     return Scaffold(
         appBar: AppBar(
@@ -96,15 +96,20 @@ class TaskOverviewState extends State<TaskOverview> {
         physics: ClampingScrollPhysics(),
         children: <Widget>[
           for (int i = 0; i < textEntries.length; i++)
-            ListTile(
+            Card(
               key: Key('$i'),
-              trailing: IconButton(
-                  icon: Icon(Icons.add),
-                  tooltip: 'More details',
-                  onPressed: () => Navigator.pushNamed(context, "categoryDetails")
+              child: ListTile(
+                trailing: Transform(
+                  transform: Matrix4.translationValues(16, 0.0, 0.0),
+                  child: IconButton(
+                      icon: Icon(Icons.add),
+                      tooltip: 'More details',
+                      onPressed: () => Navigator.pushNamed(context, "categoryDetails")
+                  ),
+                ),
+                title: Text(textEntries[i]),
               ),
-              title: Text(textEntries[i]),
-            ),
+            )
         ],
         onReorder: (int oldIndex, int newIndex) {
           setState(() {
