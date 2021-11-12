@@ -20,8 +20,9 @@ class TaskOverviewState extends State<TaskOverview> {
   final List<String> buttonEntries = ['Daily', 'Weekly', 'Monthly', 'General'];
   final List<String> textEntries = [];
   final ButtonStyle headerStyle = ElevatedButton.styleFrom(minimumSize: Size(0, 50));
-  final firestoreInstance = FirebaseFirestore.instance;
   var currentUser = FirebaseAuth.instance.currentUser;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance.collection('users').snapshots();
 
   @override
   Widget build(BuildContext context) {
@@ -58,37 +59,49 @@ class TaskOverviewState extends State<TaskOverview> {
   }
 
   // Builds the tasks in a given category using ReorderableListView.
-  // TODO fix the alignment of the iconbutton
   Widget _buildTasks() {
-    return ReorderableListView(
-        shrinkWrap: true,
-        physics: ClampingScrollPhysics(),
-        children: <Widget>[
-          for (int i = 0; i < textEntries.length; i++)
-            Card(
-              key: Key('$i'),
-              child: ListTile(
-                trailing: Transform(
-                  transform: Matrix4.translationValues(16, 0.0, 0.0),
-                  child: IconButton(
-                      icon: Icon(Icons.add),
-                      tooltip: 'More details',
-                      onPressed: () => Navigator.pushNamed(context, "categoryDetails")
-                  ),
-                ),
-                title: Text(textEntries[i]),
-              ),
-            )
-        ],
-        onReorder: (int oldIndex, int newIndex) {
-          setState(() {
-            if (oldIndex < newIndex) {
-              newIndex -= 1;
-            }
-            final item = textEntries.removeAt(oldIndex);
-            textEntries.insert(newIndex, item);
-          });
+    return StreamBuilder<QuerySnapshot>(
+      stream: _usersStream,
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return Text('Snapshot error');
         }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text('Loading');
+        }
+
+        return ReorderableListView(
+            shrinkWrap: true,
+            physics: ClampingScrollPhysics(),
+            children: <Widget>[
+              for (int i = 0; i < textEntries.length; i++)
+                Card(
+                    key: Key('$i'),
+                    child: ListTile(
+                    trailing: Transform(
+                      transform: Matrix4.translationValues(16, 0.0, 0.0),
+                      child: IconButton(
+                            icon: Icon(Icons.add),
+                            tooltip: 'More details',
+                            onPressed: () => Navigator.pushNamed(context, "categoryDetails")
+                      ),
+                    ),
+                    title: Text(textEntries[i]),
+                  )
+                )
+            ],
+            onReorder: (int oldIndex, int newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = textEntries.removeAt(oldIndex);
+                textEntries.insert(newIndex, item);
+              });
+            }
+        );
+      }
     );
   }
 

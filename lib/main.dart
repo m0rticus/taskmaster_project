@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -25,9 +26,13 @@ class MyApp extends StatefulWidget {
 // Stateful class to build app
 // Primarily for routing
 class MyAppState extends State<MyApp> {
-  FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance.collection('users').snapshots();
   bool _initialized = false;
   bool _error = false;
+  final String sampleEmail = "bobchu352@gmail.com";
+  final String samplePassword = "1234567";
 
   @override
   void initState() {
@@ -39,10 +44,11 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     // Authentication
     initializeAuth();
-    createAccAuth();
-    signInAccAuth();
+    createAccAuth(sampleEmail, samplePassword);
+    signInAccAuth(sampleEmail, samplePassword);
 
     // Stateful loading for FlutterFire initialization
+    // Failed to initialize Firebase
     if (_error) {
       return MaterialApp(
           home: Scaffold(
@@ -52,6 +58,7 @@ class MyAppState extends State<MyApp> {
           )
       );
     }
+    // Still loading Firebase
     if (!_initialized) {
       return MaterialApp(
           home: Scaffold(
@@ -61,6 +68,7 @@ class MyAppState extends State<MyApp> {
           )
       );
     }
+    // Initialized with no errors
     return MaterialApp(
         home: TaskOverview(),
         routes: {
@@ -68,6 +76,8 @@ class MyAppState extends State<MyApp> {
         }
     );
   }
+
+  // Initialization function for Firebase
   void initializeFlutterFire() async {
     try {
       await Firebase.initializeApp();
@@ -81,6 +91,7 @@ class MyAppState extends State<MyApp> {
     }
   }
 
+  // Checks whether the user has signed in state
   void initializeAuth() async {
     auth.authStateChanges()
         .listen((User? user) {
@@ -92,13 +103,19 @@ class MyAppState extends State<MyApp> {
     });
   }
 
-  void createAccAuth() async {
+  // Creates an account with sample parameters
+  void createAccAuth(String email, String password) async {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
         .createUserWithEmailAndPassword (
-          email: "bobchu351@gmail.com",
-          password: "1234567"
+          email: email,
+          password: password
       );
+      await FirebaseFirestore.instance.collection('users')
+        .doc(userCredential.user!.uid).set({
+          'email' : email,
+          'userId' : userCredential.user!.uid
+      });
     } on FirebaseAuthException catch (e) {
       if (e.code == 'fail condition') {
         print('Auth failure');
@@ -110,12 +127,13 @@ class MyAppState extends State<MyApp> {
     }
   }
 
-  void signInAccAuth() async {
+  // Attempts to sign in with sample parameters
+  void signInAccAuth(String email, String password) async {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
         .signInWithEmailAndPassword(
-          email: "bobchu351@gmail.com",
-          password: "1234567"
+          email: email,
+          password: password
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -127,5 +145,4 @@ class MyAppState extends State<MyApp> {
       print(e);
     }
   }
-
 }
